@@ -15,7 +15,7 @@ Group #: \underline{3}
 
 Group Leader and ID: \underline{Brianna Johnson (01722540)}
 
-Member Names and IDs: \underline{Marco Sousa (01747512), Ben Pfeffer (01791790), Nikita Seleznev (01938236)}
+Member Names and IDs: \underline{Marco Sousa (01747512), Ben Pfeffer (01791790), Nikita Seleznev (01938236),} \underline{Brianna Johnson (01722540)}
 
 
 
