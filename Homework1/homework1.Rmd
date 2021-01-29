@@ -1,0 +1,150 @@
+---
+title: "Sectional Homework 1"
+author: "Group 3"
+date: "1/28/2021"
+output: pdf_document
+header-includes:
+  - \usepackage{tabu}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Group #: \underline{3}
+
+Group Leader and ID: \underline{Brianna Johnson (01722540)}
+
+Member Names and IDs: \underline{Marco Sousa (01747512), Ben Pfeffer (01791790), Nikita Seleznev (01938236)}
+
+
+
+# Sectional Written Homework #1:  (25 points):   
+
+* (6 points; 2 points * 3) Consider two random variables X (0 = male; 1 = female) and Y (0= low risk; 1= medium risk; 2 = high risk) with a joint pmf given in the Table below.
+
+
+
+\begin{center}
+Table Joint pmf of X and Y:
+
+\begin{tabu} to 0.9\textwidth { | >{\centering}m{2cm} | >{\centering}m{2cm}| >{\centering}m{2cm} |>{\centering}m{2cm}| }
+
+\hline
+ & Y=0 & Y=1 & Y=2 \\
+\hline
+X=0 & 1/25 & 1/10 & 1/5 \\
+\hline
+X= 1 & 2/5 & 4/25 & 1/10 \\
+\hline
+
+\end{tabu}
+\end{center}
+
+
+* P(X=Female,Y=High Risk) = P(X=1,Y=2) = 1/10
+* P(X=Female)=P(X=1)=2/5+4/25+1/10 = 22/50+8/50+5/50 = 33/50
+* P(Y=High Risk | X=Female) = P(X=Female,Y=High Risk)/ P(X=Female) = (1/10)/(33/50) = 5/33
+
+
+
+* (3 points) Suppose a success of a medical trial, X (yes/no), follows a true binomial population distribution. We randomly draw samples of size, n=30, from this binomial population distribution, with the probability of success =0.2. Answer the following questions:
+    1. Given this sample size (n=30), will the CLT hold true?  Show your steps to prove if the CLT holds true.
+    2. If the CLT holds true, what is the mean of these sample means?  What is the standard deviation of these sample means?
+    
+1. CLT holds true for Binomial Distribution sampling if min(np,n(1-p)) $\geq$ 5. 
+Thus: min(30 $\times$ 0.2, 30(1-0.2)) = min(6,24) = 6 $\geq$ 5. This condition holds true. Thus, CLT will hold true.
+
+2.  $\mu$ = np = 30(0.2) = 6. $\sigma_x$ = $\frac{\sigma_{pop}}{\sqrt{n}}$ = $\sqrt{(30 \times.2 \times .8)} / \sqrt{30}= \sqrt{4.8}/\sqrt{30} = 0.4$
+
+Note that $\sigma_{pop}^2 = np(1-p)$.
+
+
+
+* (4 points) Let’s assume the number of spams follows the Poisson distribution and we randomly draw samples of size =40, with the mean of sample means of 6. Estimate the population mean and the population standard deviation based on CLT.  Show you steps and no scores are assigned if only answers are provided. 
+
+$\mu = \lambda$, and $\sigma^2 = \lambda$, generally. $\mu_{sample} = 6$ and $\sigma_{sample}^2 = 6$.
+
+$\mu_{pop} = \mu_{sample} = \lambda = 6$. Thus $\mu_{pop} = 6$.
+
+$\sigma_{sample} = \sigma_{pop}/\sqrt{n}$. $\sigma_{sample}^2 = (\sigma_{pop}/ \sqrt{n})^2 = \sigma_{pop}^2/n$
+
+$6 = \sigma_{pop}^2/n$. $40 \times 6 = 240 = \sigma_{pop}^2$
+
+But this is variance. We want standard deviation: $\sqrt{240} = \sigma_{pop} \approx 15.491$
+
+Thus, final answers: $\mu_{pop} = 6, \sigma_{pop} \approx 15.4919$ are population estimates based on the sample.
+
+
+* (12 points; 4 points*3) Use R to
+    * Randomly generate 10 values (n=10) for each of three random variables (RVs), x1, x2, and x3, using a random seed = 490, from a multivariate Gaussian distribution, with a population mean vector of [2, 4, 6] (ie., mean of X1= 2, mean of X2= 4, mean of X3= 6) and a population covariance matrix of these RVs (shown below):
+
+
+|    | X1 | X2 | X3 |
+|----|----|----|----|
+| X1 | 4  | 3  | 2  |
+| X2 | 3  | 3  | 1  |
+| X3 | 2  | 1  | 2  |
+
+Note: please use the exact random seed = 490, so we can replicate your values; 
+
+Reference: R: https://astrostatistics.psu.edu/su07/R/html/MASS/html/mvrnorm.html
+
+Please past your R code and data output below: 
+
+```{r mvrnormUse}
+#Construction of our covariance matrix and vector means. Setting seed
+Sigma <- matrix(c(4,3,2,3,3,1,2,1,2),3,3)
+means <- c(2, 4, 6)
+set.seed(490)
+#Sampling using mvrnorm.
+samples = MASS::mvrnorm(n=10, means, Sigma)
+samples
+```
+
+
+
+* Use relevant R functions to compute Expected Value (ie., mean), Variance, Standard Deviation, Mode, Median, Skewness and Kurtosis using the data generated for x1,  x2 and x3 in Problem (a), respectively. Please past your R code for computing each statistic, and corresponding R output below: 
+
+```{r defineFunc}
+#Defining a mode function
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+library(moments);
+
+```
+
+```{r descriptiveStats}
+means <- apply(samples, 2, mean)
+means
+
+vars <- apply(samples, 2, var)
+vars
+
+sds <- apply(samples, 2, sd)
+sds
+
+modes <- apply(samples, 2, Mode)
+modes
+
+medians <- apply(samples, 2, median)
+medians
+
+skewness(samples)
+
+kurtosis(samples)
+```
+
+
+* Use relevant R functions to compute the correlation and covariance matrix of x1, x2 and x3, with the data generated from Problem (a). Please paste your R code and output below: 
+
+```{r corcov}
+
+cov(samples)
+
+cor(samples)
+
+```
