@@ -107,13 +107,33 @@ samples
 * Use relevant R functions to compute Expected Value (ie., mean), Variance, Standard Deviation, Mode, Median, Skewness and Kurtosis using the data generated for x1,  x2 and x3 in Problem (a), respectively. Please past your R code for computing each statistic, and corresponding R output below: 
 
 ```{r defineFunc}
-#Defining a mode function
+library(moments);
+library(modeest);
+
+#Defining a simple mode function
 Mode <- function(x) {
   ux <- unique(x)
   ux[which.max(tabulate(match(x, ux)))]
 }
 
-library(moments);
+#Defining a mode function that considers equal cases
+Column_Mode <- function(x) {
+  modes<-list()
+  n<-length(x[1,])
+  for(i in seq.int(1, n)){
+    mode<-mfv(x[,i])
+    if(length(mode)==length(x)/n){
+      mode<-NA
+    }
+    modes<- append(modes, mode)
+  }
+  output<-""
+  for(i in modes){
+    output<-paste(output,i)
+  }
+  noquote(output)
+}
+
 
 ```
 
@@ -127,8 +147,13 @@ vars
 sds <- apply(samples, 2, sd)
 sds
 
+#This was using the default mode function. However, more appropriate output is NA, since every value appears once.
 modes <- apply(samples, 2, Mode)
 modes
+
+#Mode considering for equal cases
+modes2 <- Column_Mode(samples)
+modes2
 
 medians <- apply(samples, 2, median)
 medians
