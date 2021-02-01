@@ -147,7 +147,8 @@ vars
 sds <- apply(samples, 2, sd)
 sds
 
-#This was using the default mode function. However, more appropriate output is NA, since every value appears once.
+#This was using the default mode function. However, more appropriate
+#output is NA, since every value appears once.
 modes <- apply(samples, 2, Mode)
 modes
 
