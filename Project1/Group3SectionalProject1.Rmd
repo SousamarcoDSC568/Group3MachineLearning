@@ -1,0 +1,42 @@
+---
+title: "Sectional Project 1"
+author: "Group 3"
+date: "2/11/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introducing the Dataset
+
+Discussion of the data: What is it about? # Observations? Attributes? So on. 
+
+Identify Y and X.
+
+## Descriptive Statistics
+
+### Example subsection title 1
+
+### Example subsection title 2
+
+## Modelling and Regression
+
+### Multiple Linear Regression
+
+### Ridge Regression
+
+### Lasso Regression
+
+### K-Fold Cross Validation 
+
+
+## Citations
+
+
+
+
+
+
+
