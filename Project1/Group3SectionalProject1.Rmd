@@ -94,9 +94,7 @@ Naively consider most attributes at onset.
 ```{r multiModel1, echo=FALSE}
 #Naively considering many attributes
 multiModel1 <-lm(MEDV ~CRIM+ZN+INDUS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT, data=training)
-
 summary(multiModel1)
-
 ```
 
 Some initial insight is that LSTAT and RM indeed were strong predictors. Removing INDUS and AGE, every attribute becomes a significant predictor with the possible exception of B, depending on alpha. Let's consider what happens if we remove RAD, which varies strongly with TAX.
