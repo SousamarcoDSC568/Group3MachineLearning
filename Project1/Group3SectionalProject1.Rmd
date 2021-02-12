@@ -3,36 +3,154 @@ title: "Sectional Project 1"
 author: "Group 3"
 date: "2/11/2021"
 output: pdf_document
+urlcolor: blue
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+#install.packages('ggplot2')
+library(ggplot2)
+
+library(corrplot)
+
 ```
 
-## Introducing the Dataset
-
-Discussion of the data: What is it about? # Observations? Attributes? So on. 
-
-Identify Y and X.
-
-## Descriptive Statistics
-
-### Example subsection title 1
-
-### Example subsection title 2
-
-## Modelling and Regression
-
-### Multiple Linear Regression
-
-### Ridge Regression
-
-### Lasso Regression
-
-### K-Fold Cross Validation 
+# Introduction to the Boston Housing Dataset
 
 
-## Citations
+```{r importingData, echo=FALSE}
+
+#Importing from directory; alternatively add the file to the github folder and load.
+data <-read.table('https://archive.ics.uci.edu/ml/machine-learning-databases/housing/housing.data')
+
+#Names (Note: The .names file contains metadata on attributes)
+names(data) <-c("CRIM", "ZN", "INDUS", "CHAS", "NOX", "RM", "AGE", "DIS","RAD","TAX","PTRATIO","B","LSTAT","MEDV")
+
+#There weren't any NA (dim(data) retained)
+data <- na.omit(data)
+
+```
+
+
+The Boston Housing dataset considers housing values and their associated properties in suburbs of Boston, Massachusetts. The dataset contains 506 observations and 14 attributes. We acquired the dataset from the Machine Learning Database (MLDB), found [here](https://archive.ics.uci.edu/ml/machine-learning-databases/housing/). In particular, we are interested in constructing a model through regression techniques to gain insight on housing values. As such, we will use the 13 features to model 'MEDV', the median value of owner occupied homes (in $1,000s). 
+
+The data is displayed as follows.
+```{r displayData, echo=FALSE}
+head(data)
+```
+
+# Exploratory Data Analysis
+
+
+## MEDV Distribution
+
+```{r MEDVHistogram, echo=FALSE,out.width='70%'}
+
+histMEDV = ggplot(data, aes(MEDV)) + geom_histogram(bins=30,color="darkblue", fill="lightblue")+ ggtitle("Median Value Distribution") + theme(plot.title = element_text(hjust = 0.5, size = 17)) 
+
+histMEDV
+```
+
+The histogram demonstrates the values are not uniformly distributed. Rather, they follow a mostly normal distributions, with some outliers at the tail.
+
+
+## Correlation Matrix
+
+
+```{r Corrmatrix, echo=FALSE,out.width='70%'}
+
+corMatrix <- cor(data)
+corrplot.mixed(corMatrix, number.cex= 9/ncol(data),tl.cex= 9/ncol(data))
+
+
+```
+
+While we produce many correlation values, we are firstly interested in how each attribute correlates to MEDV. This is represented by the bottom row or last column. We can immediately see the binary CHAS attribute does not correlate strongly with MEDV. However, it can be seen that RM (0.7) and LSTAT (-0.74) correlate with MEDV stronger than other attributes. Furthermore, the correlation between RM and LSTAT is -0.61. Since they do not correlate very strongly with one another, we can select both as predictor attributes without too much concern of collinearity for their case. The greatest correlation is between RAD and TAX of 0.91. Including both of these may raise some concerns regarding the minimal collinearity assumption of linear regression.
+
+
+## Example EDA subsection title 3
+
+
+# Modelling and Regression
+
+MedV takes the value for Y, along 13 feature attributes of the dataset, in the form of $Y = \beta_0+\beta_1x_1+...+\beta_nx_n$.
+
+
+## Multiple Linear Regression
+
+
+This is very subject to change. I chose to simply split the data in a 80/20 split. If you think we should consider another split, or more, please do so. Furthermore, this is simply a start, and have yet to articulate everything. Please feel free to make changes.
+```{r dataSplitting, echo=FALSE}
+#Setting seed for reproducible results
+set.seed(1)
+
+indices <-sample(1:nrow(data), 0.8 * nrow(data), replace = TRUE)
+training <-data[indices,]
+testing  <-data[-indices,]
+```
+
+Naively consider most attributes at onset.
+```{r multiModel1, echo=FALSE}
+#Naively considering many attributes
+#multiModel <-lm(MEDV ~CRIM+ZN+INDUS+NOX+RM+AGE+DIS+TAX+PTRATIO+B+LSTAT, data=training)
+multiModel1 <-lm(MEDV ~CRIM+ZN+INDUS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT, data=training)
+
+summary(multiModel1)
+
+```
+
+Some initial insight is that LSTAT and RM indeed were strong predictors. Removing INDUS and AGE, every attribute becomes a significant predictor with the possible exception of B, depending on alpha. Let's consider what happens if we remove RAD, which varies strongly with TAX.
+
+```{r multiModel2, echo=FALSE}
+#Naively considering many attributes
+#multiModel <-lm(MEDV ~CRIM+ZN+INDUS+NOX+RM+AGE+DIS+TAX+PTRATIO+B+LSTAT, data=training)
+multiModel2 <-lm(MEDV ~CRIM+ZN+NOX+RM+DIS+TAX+PTRATIO+B+LSTAT, data=training)
+
+summary(multiModel2)
+
+```
+
+We can see that without RAD, TAX is no longer a strong predictor. As such, TAX adds predictive value in relation to RAD. The next model removes TAX and adds RAD back in.
+
+```{r multiModel3, echo=FALSE}
+#Naively considering many attributes
+#multiModel <-lm(MEDV ~CRIM+ZN+INDUS+NOX+RM+AGE+DIS+TAX+PTRATIO+B+LSTAT, data=training)
+multiModel3 <-lm(MEDV ~CRIM+ZN+NOX+RM+DIS+RAD+PTRATIO+B+LSTAT, data=training)
+
+summary(multiModel3)
+
+```
+
+MSE for model 1, 2, and 3.
+```{r multiModelTesting, echo=FALSE}
+multiPredictions <-predict(multiModel1, testing)
+RSS <- sum((testing$MEDV - multiPredictions)^2)
+MSE1 <- mean((testing$MEDV - multiPredictions)^2)
+MSE1
+
+multiPredictions <-predict(multiModel2, testing)
+RSS2 <- sum((testing$MEDV - multiPredictions)^2)
+MSE2 <- mean((testing$MEDV - multiPredictions)^2)
+MSE2
+
+multiPredictions <-predict(multiModel3, testing)
+RSS3 <- sum((testing$MEDV - multiPredictions)^2)
+MSE3 <- mean((testing$MEDV - multiPredictions)^2)
+MSE3
+
+```
+
+Lasso with parameter tuning will give us further insight into paramater selection. This section can/should be expanded/refined.
+
+
+## Ridge Regression
+
+## Lasso Regression
+
+## K-Fold Cross Validation 
+
+# Citations
 
 
 
