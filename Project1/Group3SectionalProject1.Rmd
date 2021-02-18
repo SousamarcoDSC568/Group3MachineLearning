@@ -120,8 +120,7 @@ multiModel4 <-lm(MEDV ~NOX+RM+DIS+PTRATIO+LSTAT, data=training)
 summary(multiModel4)
 ```
 
-
-MSE for model 1, 2, and 3.
+MSE for model 1, 2.
 ```{r multiModelTesting, echo=FALSE}
 multiPredictions <-predict(multiModel1, testing)
 RSS <- sum((testing$MEDV - multiPredictions)^2)
@@ -137,15 +136,16 @@ multiPredictions <-predict(multiModel3, testing)
 RSS3 <- sum((testing$MEDV - multiPredictions)^2)
 MSE3 <- mean((testing$MEDV - multiPredictions)^2)
 MSE3
+```
 
+
+```{multimodeltesting2, echo=TRUE}
 multiPredictions <-predict(multiModel4, testing)
-RSS4 <- sum((testing$MEDV - multiPredictions)^2)
 MSE4 <- mean((testing$MEDV - multiPredictions)^2)
 MSE4
 
 # All Output are around 21 YET the ridge produces something like 42046. 
 # How do we compare these two? Where is the error in my multiple lin regression?
-
 ```
 
 Lasso with parameter tuning will give us further insight into paramater selection. This section can/should be expanded/refined.
