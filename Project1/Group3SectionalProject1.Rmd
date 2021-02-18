@@ -120,7 +120,7 @@ multiModel4 <-lm(MEDV ~NOX+RM+DIS+PTRATIO+LSTAT, data=training)
 summary(multiModel4)
 ```
 
-MSE for model 1, 2.
+MSE for model 1, 2, 3.
 ```{r multiModelTesting, echo=FALSE}
 multiPredictions <-predict(multiModel1, testing)
 RSS <- sum((testing$MEDV - multiPredictions)^2)
@@ -138,8 +138,8 @@ MSE3 <- mean((testing$MEDV - multiPredictions)^2)
 MSE3
 ```
 
-
-```{multimodeltesting2, echo=TRUE}
+MSE for model 4, using only intercepts as derived from ridge coefficients.
+```{r multiModelTesting2, echo=TRUE}
 multiPredictions <-predict(multiModel4, testing)
 MSE4 <- mean((testing$MEDV - multiPredictions)^2)
 MSE4
