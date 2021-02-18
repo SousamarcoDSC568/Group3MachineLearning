@@ -11,8 +11,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 #install.packages('ggplot2')
 library(ggplot2)
-
 library(corrplot)
+
+library(glmnet)
+library(plotmo)
 
 ```
 
@@ -85,7 +87,7 @@ This is very subject to change. I chose to simply split the data in a 80/20 spli
 #Setting seed for reproducible results
 set.seed(1)
 
-indices <-sample(1:nrow(data), 0.8 * nrow(data), replace = TRUE)
+indices <-sample(1:nrow(data), 0.6 * nrow(data), replace = TRUE)
 training <-data[indices,]
 testing  <-data[-indices,]
 ```
@@ -107,9 +109,17 @@ summary(multiModel2)
 We can see that without RAD, TAX is no longer a strong predictor. As such, TAX adds predictive value in relation to RAD. The next model removes TAX and adds RAD back in.
 
 ```{r multiModel3, echo=FALSE}
+#Considering all values that are considered 'significant' with RAD included
 multiModel3 <-lm(MEDV ~CRIM+ZN+NOX+RM+DIS+RAD+PTRATIO+B+LSTAT, data=training)
 summary(multiModel3)
 ```
+
+```{r multiModel4, echo=TRUE}
+#This model is using any value that is abs(Intercept) > 1 for the ridge
+multiModel4 <-lm(MEDV ~NOX+RM+DIS+PTRATIO+LSTAT, data=training)
+summary(multiModel4)
+```
+
 
 MSE for model 1, 2, and 3.
 ```{r multiModelTesting, echo=FALSE}
@@ -128,16 +138,87 @@ RSS3 <- sum((testing$MEDV - multiPredictions)^2)
 MSE3 <- mean((testing$MEDV - multiPredictions)^2)
 MSE3
 
+multiPredictions <-predict(multiModel4, testing)
+RSS4 <- sum((testing$MEDV - multiPredictions)^2)
+MSE4 <- mean((testing$MEDV - multiPredictions)^2)
+MSE4
+
+# All Output are around 21 YET the ridge produces something like 42046. 
+# How do we compare these two? Where is the error in my multiple lin regression?
+
 ```
 
 Lasso with parameter tuning will give us further insight into paramater selection. This section can/should be expanded/refined.
 
-
 ## Ridge Regression
+
+```{r ridgeDataFormatting, echo=FALSE}
+#Setting seed
+set.seed(1)
+
+#Formatting into matrix
+data.mat <- model.matrix(MEDV ~ .-1, data=data)
+
+#delineating columns/features
+x <- data.mat[, 1:13]
+y <- data[, 'MEDV']
+
+```
+
+Constructing a ridge model.
+```{r ridgeModelStart, echo=TRUE}
+#lambda grid
+grid <- 10^seq(6, -3, length=10)
+#ridgeModel
+ridge.mod <- glmnet(scale(x), y, alpha = 0, lambda = grid, thresh = 1e-2, standardize = TRUE)
+plot_glmnet(ridge.mod, xvar = "lambda", label = 13)
+```
+
+Considering a best lambda for the model and hyperparameter tuning.
+```{r ridgeLambdaTuning, echo=TRUE}
+cv.out <- cv.glmnet(x, y, alpha=0, nfolds = 10)
+cv.out
+
+plot(cv.out)
+
+best.lambda <- cv.out$lambda.min
+best.lambda
+```
+
+Considering coefficients for ridge.
+```{r ridgeCoeff, echo=TRUE}
+
+ridge.final <- glmnet(scale(x), y, alpha = 0, lambda = best.lambda, thresh=1e-2, standardsize = TRUE)
+predict(ridge.final, type="coefficients", s=best.lambda)
+
+```
+
+Considering MSE and RMSE for ridge using all coefficients.
+```{r ridgeError, echo=FALSE}
+
+ridge.pred <- predict(ridge.final, s=best.lambda, newx=x)
+ridge.MSE = mean((ridge.pred -y)^2)
+ridge.RMSE = sqrt(mean((ridge.pred - y)^2))
+
+ridge.MSE
+ridge.RMSE
+
+```
 
 ## Lasso Regression
 
 ## K-Fold Cross Validation 
+
+A simple quick table for us to store into for now:
+
+|           | MSE | RMSE |
+|-----------|-----|------|
+| Multiple  | 0   | 0    |
+| Multiple 2| 0   | 0    |
+| Ridge     | 0   | 0    |
+| Lasso     | 0   | 0    |
+
+
 
 # Citations
 
