@@ -1,7 +1,7 @@
 ---
-title: "Sectional Project 1"
+title: "Sectional Project 1 - Regression"
 author: "Group 3"
-date: "2/11/2021"
+date: "2/20/2021"
 output: pdf_document
 urlcolor: blue
 ---
@@ -17,6 +17,10 @@ library(glmnet)
 library(plotmo)
 
 ```
+
+Group Leader: \underline{Brianna Johnson}
+
+Member Names: \underline{Marco Sousa, Nikita Seleznev, Ben Pfeffer, Brianna Johnson}
 
 # Introduction to the Boston Housing Dataset
 
@@ -207,15 +211,14 @@ ridge.RMSE
 Considering R squared for each model manually
 ```{r ridgeError3, echo=TRUE}
 
-yBar = mean(ridge.pred1)
+yBar = mean(y)
 RSS1 = sum((ridge.pred1 - y)^2)
-TSS1 = sum((ridge.pred1 - yBar)^2)
+TSS1 = sum((y - yBar)^2)
 rsq1 = 1 - (RSS1/TSS1) 
 rsq1
 
-yBar = mean(ridge.pred2)
 RSS2 = sum((ridge.pred2 - y)^2)
-TSS2 = sum((ridge.pred2 - yBar)^2)
+TSS2 = sum((y - yBar)^2)
 rsq2 = 1 - (RSS2/TSS2) 
 rsq2
 ```
@@ -258,13 +261,13 @@ plot(y, lasso.pred,  xlab="True home value, $K", ylab="Lasso prediction, $K",)
 
 ```
 
+Considering the R squared for the 11 selector Lasso model.
 ```{r rSquaredManualLasso1}
-yBar = mean(lasso.pred)
+yBar = mean(y)
 lassoRSS = sum((lasso.pred - y)^2)
-lassoTSS = sum((lasso.pred - yBar)^2)
+lassoTSS = sum((y - yBar)^2)
 rsq = 1 - (lassoRSS/lassoTSS) 
 rsq
-
 ```
 
 
@@ -283,10 +286,9 @@ plot(y, lasso.pred, xlab="True home value, $K", ylab="Lasso prediction, $K",)
 
 Considering the R squared for the 5 selector Lasso model.
 ```{r rSquaredManualLasso2}
-
-yBar = mean(lasso.pred)
+yBar = mean(y)
 lassoRSS = sum((lasso.pred - y)^2)
-lassoTSS = sum((lasso.pred - yBar)^2)
+lassoTSS = sum((y - yBar)^2)
 rsq = 1 - (lassoRSS/lassoTSS) 
 rsq
 
@@ -308,10 +310,10 @@ The final MSE's, RMSE's, and $R^2$, achieved by different regression approaches 
 |------------|--------|-------|-----|
 | Multiple 12| 22.554 | 4.749 |0.720|
 | Multiple  8| 23.025 | 4.798 |0.695|
-| Ridge    13| 22.894 | 4.784 |0.614|
-| Ridge     5| 25.096 | 5.009 |0.548|
-| Lasso    11| 23.445 | 4.842 |0.578|
-| Lasso     5| 28.250 | 5.315 |0.311|
+| Ridge    13| 22.894 | 4.784 |0.728|
+| Ridge     5| 25.096 | 5.009 |0.702|
+| Lasso    11| 23.445 | 4.842 |0.722|
+| Lasso     5| 28.250 | 5.315 |0.665|
 
 
 Having more independent variables as an input to regression provides overall smaller MSE and RMSE errors. However, the difference in errors between Ridge regression and Lasso regression with 11 input variables is small. Furthermore, Lasso regression with only 5 most significant regressors still yields  RMSE error, which is only 9.8 % higher compared to the optimum result. Thus, Lasso enables significant reduction in the dataset requirements without loosing much of the prediction accuracy. 
@@ -323,8 +325,8 @@ The goal was to modell MEDV, the median value of owner occupied homes (in $1,000
 # Citations
 
 [1] Fang, Julia. “CIS490_LS8_21S_LassoReg&amp;CrossValidation.” MyCourses, 2021,
-[linked pdf](https://umassd.umassonline.net/bbcswebdav/pid-700293-dt-content-rid-4661573_1/xid-4661573_1)
+[linked umassd pdf](https://umassd.umassonline.net/bbcswebdav/pid-700293-dt-content-rid-4661573_1/xid-4661573_1)
 
-[2] Fang, Julia. “R_RidgeLassoCV_Final.pdf” MyCourses, 2021, [linked pdf](https://umassd.umassonline.net/bbcswebdav/pid-700293-dt-content-rid-4655072_1/xid-4655072_1).
+[2] Fang, Julia. “R_RidgeLassoCV_Final.pdf” MyCourses, 2021, [linked umassd pdf](https://umassd.umassonline.net/bbcswebdav/pid-700293-dt-content-rid-4655072_1/xid-4655072_1).
 
 [3]Index of /Ml/Machine-Learning-Databases/Housing, [archive.ics.uci.edu/ml/machine-learning-databases/housing/](https://archive.ics.uci.edu/ml/machine-learning-databases/housing/).
