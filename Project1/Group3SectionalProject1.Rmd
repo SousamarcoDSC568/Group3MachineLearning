@@ -20,7 +20,7 @@ library(plotmo)
 
 Group Leader: \underline{Brianna Johnson}
 
-Member Names: \underline{Marco Sousa, Nikita Seleznev, Ben Pfeffer, Brianna Johnson}
+Member Names: \underline{Nikita Seleznev, Marco Sousa, Brianna Johnson, Ben Pfeffer}
 
 # Introduction to the Boston Housing Dataset
 
@@ -67,7 +67,7 @@ corrplot.mixed(corMatrix, number.cex= 9/ncol(data),tl.cex= 9/ncol(data))
 
 ```
 
-While we produce many correlation values, we are firstly interested in how each attribute correlates to MEDV. This is represented by the bottom row or last column. We can immediately see the binary CHAS attribute does not correlate strongly with MEDV. However, it can be seen that RM (0.7) and LSTAT (-0.74) correlate with MEDV stronger than other attributes. Furthermore, the correlation between RM and LSTAT is -0.61. Since they do not correlate very strongly with one another, we can select both as predictor attributes without too much concern of collinearity for their case. The greatest correlation is between RAD and TAX of 0.91, and an $R^2$ of 0.82 thusly. Including both of these may raise some concerns regarding the minimal collinearity assumption of linear regression.
+While we produce many correlation values, we are firstly interested in how each attribute correlates to MEDV. This is represented by the bottom row or last column. We can immediately see the binary CHAS attribute does not correlate strongly with MEDV. However, it can be seen that RM (0.7) and LSTAT (-0.74) correlate with MEDV stronger than other attributes. Furthermore, the correlation between RM and LSTAT is -0.61. Since they do not correlate very strongly with one another, we can select both as predictor attributes without too much concern of collinearity for their case. The greatest correlation is between RAD and TAX of 0.91, and an $R^2$ of 0.82 thusly. Including both of these may raise some concerns regarding the minimal collinearity assumption of linear regression for these features.
 
 # Modelling and Regression
 
@@ -87,7 +87,7 @@ testing  <-data[-indices,]
 ```
 
 Naively consider all features except the binary at onset for a MLR.
-```{r multiModel1, echo=FALSE}
+```{r multiModel1, echo=TRUE}
 #Naively considering many attributes
 multiModel1 <-lm(MEDV ~CRIM+ZN+INDUS+NOX+RM+AGE+DIS+RAD+TAX+PTRATIO+B+LSTAT, data=training)
 summary(multiModel1)
@@ -225,9 +225,10 @@ rsq2
 
 ## Lasso Regression
 
-The Lasso regression will allow us to conduct selection of the most influential independent variables to predict our dependent variable, which is the house price.  
-Again, we will use the same range of the regularization parameter, $\lambda$, values, but will sample this range more densely as it proved to provide better results for the parameter selection.
-The output of the Lasso regression for various values of $\lambda$ are given below. It is evident that with increasing regularization parameter the number of non-zero regressors is decreasing.    
+The Lasso regression is using regularization method based on the $\l1$ norm of the regression coefficients vector. This regularization yields sparse models by forcing some regression coefficients exactly to zero when regularization parameter $\lambda$ is sufficiently large. Thus, Lasso regression performs variables selection and produces simpler models, which are easier to interpret.  
+  
+We use the same range of the regularization parameter, $\lambda$, values as for the Ridge regression, but sample this range more densely as it provided better results for selecting different numbers of non-zero input variables.
+The values of the Lasso regression coefficients for various $\lambda$ are shown below. It is evident that with increasing $\lambda$  some of the regression coeffienets are forced to zero and the number of degrees of freedom is decreasing. Based on the Lasso variable selection results the most important predictors that have non-zero regression coefficients even for large  $\lambda$ are the RM and LSTAT variables. This observation is consistent with the conclusions of the exploratory data analysis section.  
  
 ```{r lasso1}
 grid <- 10^seq(6, -3, length=100)
@@ -236,7 +237,7 @@ plot_glmnet(lasso.mod, xvar="lambda", label = 12)
 
 ```
 
-Now we will conduct 10-fold cross-validation to select optimum regularization parameter lambda. The minimum MSE is produced for $\lambda$ = 0.0307, which keeps 11 non-zero regressors. Increasing $\lambda$ to 0.3789 reduces the number fo regressors to 8.
+We use a 10-fold cross-validation approach to select the optimum value of $\lambda$. More detailed discussion on the cross-validation algorithm for the Lasso regression is given in the section " K-Fold Cross Validation ". The minimum MSE is produced for $\lambda$ = 0.0307, which keeps 11 non-zero regression coefficients. 
 
 ```{r lasso2}
 ##cross-validation
@@ -244,7 +245,7 @@ lasso.cv.out <- cv.glmnet(scale(x), y, alpha=1, nfolds = 10)
 lasso.cv.out
 plot(lasso.cv.out)
 ```
-Now we will predict the coefficients of the Lasso regression for 11 non-zero predictors. Also, we will plot the predicted home price versus the true home prices and calculate the MSE and RMSE errors to check how well our mode performs. 
+The coefficients of the Lasso regression for the optimum values of $\lambda$ corresponding to the 11 non-zero regression coefficients is given below. We also plot the predicted home price values versus the true values and calculate the MSE and RMSE regression errors.
 
 ```{r lasso3}
 #keep few predictors in lasso
@@ -271,7 +272,7 @@ rsq
 ```
 
 
-Now we will further reduced the number of regressors to keep only 5 most important ones. Below are the coefficients of the Lasso regression and plot of the predicted home price versus the true home prices. We also provide the MSE and RMSE errors. As expected, the scatter of the plot and the MSE/RMSE errors are slightly higher then for the case of 11 regressors, but our model is still doing a decent job at predicting the home values based on half the number of regressors.    
+Next we further reduced the number of non-zero regression coefficients to keep only 5 most important predictors. The coefficients of the Lasso regression and the plot of the predicted home price versus the true home prices are shown below. We also calculate the MSE and RMSE errors for the case of 5 predictors. As expected, the scatter of the plot and the MSE/RMSE errors are somewhat higher compared to the case of 11 predictors, but the Lasso model is still providing acceptable results in terms of predicting the home values based on only 5 predictors.   
 
 ```{r lasso4}
 # check for fewer predictors
@@ -295,16 +296,16 @@ rsq
 ```
 ## K-Fold Cross Validation 
 
-In a standard approach a part fo the data is reserved as a test set and the rest of it is used as a training set. This can lead to a highly variable test error depending on how the dataset was split. Moreover, the machine learning approaches tend to perform  worse when less data are used for training, which happens when the training set is only a part of the entire dataset.    
+In a standard for the analysis of the algorithm performace a part of the data is reserved as a test set and the rest of the data is used as a training set. This may lead to a highly variable test error depending on how the dataset was split. Moreover, the machine learning approaches tend to perform  worse when less data are used for training, which happens when a part of the data has to be reserved for the test set.     
 
-We are employing a cross-validation (CV) technique as it provides helps to alleviate the above problems. Specifically, we use a K-fold cross validation. In this approach one fold is used as a test set while the remaining K-1 folds are used as the training set. After one of the folds is tested the algorithm moves to the other one. Thus, every data point in the set is a part of the training and the test set for some folds. The final K-fold CV mean squared error (MSE) error is computed as the mean of the MSE of individual folds. 
+For optimization of the Lasso regression we are employing a cross-validation (CV) technique as it helps to alleviate the above problems. Specifically, we use a K-fold cross validation where one fold is used as a test set while the remaining (K-1) folds are used as the training set. After a given data fold is tested the algorithm computes the obtained MSE for this fold and moves to another one. Thus, every data point in the set is a part of the training and the test set for some folds. The final K-fold CV mean squared error (MSE) error is computed as the mean of the MSE of individual folds. 
 
-In practice K = 5 or 10 tend to provide the best results as they yield a test error that does not suffer from excessively high bias, nor from very high variance. We chose to use 10-fold cross-validation approach (K = 10). 
+In practice K = 5 or 10 tend to provide the best results as they yield a test error that does not suffer from excessively high bias, nor from very high variance. We chose to use the 10-fold cross-validation approach (K = 10). 
 
-The 10-fold CV MSE is computed for each value of $\lambda$ in the predefined grid. Finally, we chose the $\lambda$ value that minimizes 10-fold CV MSE. For Lasso regression we also test other values of $\lambda$ to select the most important regressors. 
+The 10-fold CV MSE is computed for each value of $\lambda$ on the grid that we have defined. Finally, the CV algorithm  chooses the value of $\lambda$ that minimizes the 10-fold CV MSE. In developing models based on the Lasso approach we also used  higher values of $\lambda$ to select the 5 most important predictors. 
 
 
-The final MSE's, RMSE's, and $R^2$, achieved by different regression approaches are given in the table below. The number following the method indicates the number of included features.
+The final MSE's and RMSE's achieved by different regression approaches are given in the table below:
 
 |            | MSE    | RMSE  |$R^2$|
 |------------|--------|-------|-----|
@@ -316,11 +317,11 @@ The final MSE's, RMSE's, and $R^2$, achieved by different regression approaches 
 | Lasso     5| 28.250 | 5.315 |0.665|
 
 
-Having more independent variables as an input to regression provides overall smaller MSE and RMSE errors. However, the difference in errors between Ridge regression and Lasso regression with 11 input variables is small. Furthermore, Lasso regression with only 5 most significant regressors still yields  RMSE error, which is only 9.8 % higher compared to the optimum result. Thus, Lasso enables significant reduction in the dataset requirements without loosing much of the prediction accuracy. 
+The above results suggest that having more independent variables as an input to regression provides overall smaller MSE and RMSE errors. However, the difference in errors between the Ridge regression and Lasso regression with 11 input variables is small. Furthermore, Lasso regression with only 5 most significant predictors still yields  RMSE error, which is only 9.8 % higher compared to the results with 11 predictors. Thus, Lasso approach enables significant reduction in the model complexity and dataset requirements without significant loss of accuracy.  
 
 # Summary
 
-The goal was to modell MEDV, the median value of owner occupied homes (in $1,000s), based on given features. MEDV follows a skewed normal distribution with some outliers at its tail. Three regression techniques were performed to model the data: multiple linear regression, Ridge, and Lasso. It was observed that TAX only became a predictor in MLR when RAD was included in, so TAX was removed. Removing insignificant predictors (to alpha) left 8 features. Ridge was performed using all features. Then Ridge was modified to include the 5 greatest predictors. This was determine by taking the greatest absolute value of the coefficients when input was scaled. Lasso was performed with 11 then 5 predictors. Among all methods, LSTAT, RM, and PTRatio remained as significant predictors. Having more independent variables as an input to regression provides overall smaller MSE and RMSE errors. However, the difference in errors between Multiple Ridge and Lasso, each with mostly all input variables (11, 12, or 13), was small. This changed by different amounts when hyperparamater tuning took place.
+The goal was to model MEDV, the median value of owner occupied homes (in $1,000s), based on given features. MEDV follows a skewed normal distribution with some outliers at its tail. Three regression techniques were performed to model the data: multiple linear regression, Ridge, and Lasso. It was observed that TAX only became a predictor in MLR when RAD was included in, so TAX was removed. Removing insignificant predictors (to alpha) left 8 features. Ridge was performed using all features. Then Ridge was modified to include the 5 greatest predictors. This was determined by taking the greatest absolute value of the coefficients when input was scaled. Lasso was performed with 11 then 5 predictors. Among all methods, LSTAT, RM, and PTRatio remained as significant predictors for MEDV. Having more independent variables as an input to regression provides overall smaller MSE and RMSE errors. However, the difference in errors between Multiple Ridge and Lasso, each with mostly all input variables (11, 12, or 13), was small. This changed by different amounts when hyperparamater tuning took place.
 
 # Citations
 
