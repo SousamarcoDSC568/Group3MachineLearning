@@ -336,7 +336,7 @@ The above results suggest that having more independent variables as an input to 
 
 ## Explicit Regression Formula
 
-The following display the regression formula more explicitly for each finalized model in which the parameters were tuned or selected. The coefficients for initial naive models without tuning can still be seen above as output.
+The following display the regression formula more explicitly for each finalized model in which the parameters were tuned and selected. The coefficients for initial models with many more coefficients can still be seen above as output.
 
 ### Multiple Linear Regression (8)
 
@@ -352,8 +352,7 @@ MEDV = (-0.12935)CRIM
 
 ### Ridge Regression (5)
 
-MEDV =
-+(-12.6387422)NOX 
+MEDV = (-12.6387422)NOX
 +(4.5085207)RM
 +(-0.7280733)DIS
 +(-1.0318123)PTRATIO
@@ -362,11 +361,7 @@ MEDV =
 
 ### Lasso Regression (5)
 
-MEDV = 
-+(0.130133129)CHAS 
-+(3.895113886)RM
-+(-0.630418762)PTRATIO
-+(0.002297575)B
+MEDV = (0.130133129)CHAS+(3.895113886)RM+(-0.630418762)PTRATIO+(0.002297575)B
 +(-0.497652218)LSTAT
 +(15.156492728)
 
