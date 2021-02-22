@@ -340,6 +340,8 @@ The following display the regression formula more explicitly for each finalized 
 
 ### Multiple Linear Regression (8)
 
+Top 8 were chosen by removing what was not statistically significant and observing if the leftover taken together were significant.
+
 MEDV = (-0.12935)CRIM
 +(0.03885)ZN
 +(-18.55609)NOX
@@ -352,6 +354,8 @@ MEDV = (-0.12935)CRIM
 
 ### Ridge Regression (5)
 
+Top 5 were chosen when selecting the greatest 5 coefficients when input was scaled.
+
 MEDV = (-12.6387422)NOX
 +(4.5085207)RM
 +(-0.7280733)DIS
@@ -360,6 +364,8 @@ MEDV = (-12.6387422)NOX
 +(29.4519872)
 
 ### Lasso Regression (11)
+
+This Lasso had more parameters and a discretized lambda grid with larger intervals.
 
 MEDV = (-0.041774090)CRIM
 + (0.016232882)ZN
