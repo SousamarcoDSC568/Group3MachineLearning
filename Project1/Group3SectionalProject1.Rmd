@@ -243,7 +243,7 @@ rsq2
 The Lasso regression is using regularization method based on the $\l1$ norm of the regression coefficients vector. This regularization yields sparse models by forcing some regression coefficients exactly to zero when regularization parameter $\lambda$ is sufficiently large. Thus, Lasso regression performs variables selection and produces simpler models, which are easier to interpret.  
   
 We use the same range of the regularization parameter, $\lambda$, values as for the Ridge regression, but sample this range more densely as it provided better results for selecting different numbers of non-zero input variables.
-The values of the Lasso regression coefficients for various $\lambda$ are shown below. It is evident that with increasing $\lambda$  some of the regression coeffienets are forced to zero and the number of degrees of freedom is decreasing. Based on the Lasso variable selection results the most important predictors that have non-zero regression coefficients even for large  $\lambda$ are the RM and LSTAT variables. This observation is consistent with the conclusions of the exploratory data analysis section.  
+The values of the Lasso regression coefficients for various $\lambda$ are shown below. It is evident that with increasing $\lambda$  some of the regression coefficients are forced to zero and the number of degrees of freedom is decreasing. Based on the Lasso variable selection results the most important predictors that have non-zero regression coefficients even for large  $\lambda$ are the RM and LSTAT variables. This observation is consistent with the conclusions of the exploratory data analysis section.  
  
 ```{r lasso1}
 grid <- 10^seq(6, -3, length=100)
