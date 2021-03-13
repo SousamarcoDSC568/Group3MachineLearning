@@ -1,0 +1,83 @@
+---
+title: "Project 2 - Regression and CART"
+author: "Group 3"
+date: "3/13/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Group Leader: \underline{Brianna Johnson}
+
+Member Names: \underline{Marco Sousa, Ben Pfeffer, Nikita Seleznev, Brianna Johnson}
+
+
+# Introduction to the Heart Dataset
+
+```{r libraries, include=FALSE}
+library(ggplot2)
+
+library(dplyr)
+
+```
+
+Observing the data as its initial dataframe.
+```{r loadingData, echo=FALSE}
+
+#Importing from file (not from directory)
+data <- read.csv("F:/R-workspace/Group3MachineLearning/Project2/Heart.csv")
+
+#Dropping first bogus column
+data = data[-c(1)]
+
+#Constructs a new column replacing No with 0 and Yes with 1
+data <- data %>%
+      mutate(AHDBinary = ifelse(AHD == "No",0,1))
+
+head(data)
+```
+
+Describing the data, and (1) identify Y and X.
+
+I imagine the feature we are interested in is AHD, which is either "Yes" or "No" in regards to having heart disease. X are the other possible features which may predict Y.
+
+
+# Exploratory Data Analysis
+
+EDA
+
+# Logistic Model
+
+## Logistic Model
+
+Perhaps construct logistic model.
+
+## Confusion Table
+
+Generate confusion table.
+ 
+## Mode-Test Statistics
+
+Calculate classification accuracy and error, sensitivity, specificity, PPV and NPV. Will need to be compared elsewhere
+
+## ROC and AUC
+
+Generate ROC and compute AUC for each model
+
+## S sigmoid curve
+
+Generate s-curve for Y against one attribute (you can pick any one attribute), and interpret your findings
+
+
+# CART Model
+
+## CART MODEL
+
+## Other subsections
+
+# Comparing Models
+
+# Citations
+
