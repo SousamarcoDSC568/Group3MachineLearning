@@ -17,13 +17,21 @@ Member Names: \underline{Marco Sousa, Ben Pfeffer, Nikita Seleznev, Brianna John
 # Introduction to the Heart Dataset
 
 ```{r libraries, include=FALSE}
+#Visualization
 library(ggplot2)
-
+#Utilities
 library(dplyr)
+#Regression
+library(ISLR)
+#correlations
+library(corrplot)
+# library to PLOT ROC
+library(pROC)
+
 
 ```
 
-Observing the data as its initial dataframe.
+Observing the data:
 ```{r loadingData, echo=FALSE}
 
 #Importing from directory
@@ -36,39 +44,189 @@ data = data[-c(1)]
 data <- data %>%
       mutate(AHDBinary = ifelse(AHD == "No",0,1))
 
+#ca has a few na, so we may or may not remove them, yet simply state so.
+data <- na.omit(data)
+
 head(data)
 ```
 
 Describing the data, and (1) identify Y and X.
 
-I imagine the feature we are interested in is AHD, which is either "Yes" or "No" in regards to having heart disease. X are the other possible features which may predict Y.
+The Heart dataset considers AHD, their binary relationship of having heart disease or not, and their other associated properties. The dataset contains 303 observations and 14 attributes.
+
+More to be added/edited
 
 
 # Exploratory Data Analysis
 
-EDA
+## Count of Binary Outcome
+
+The following is a simple barplot of the count for the binary AHD outcome. We can see there are some more "No", than "Yes".
+
+```{r binaryCount, echo=FALSE,fig.width=5, fig.height=4,fig.align='center'}
+
+AHDbar <- ggplot(data, aes(AHD)) + geom_bar(fill="lightblue",color="black")+ ggtitle("Count of AHD") + theme(plot.title = element_text(hjust = 0.5, size = 17)) + geom_text(stat='count', aes(label=..count..), vjust=10)
+
+AHDbar
+```
+
+## Correlation matrix
+
+No correlation among AHD Binary exceeds 0.5, naturally.
+
+```{r Corrmatrix, echo=FALSE,out.width='70%'}
+
+#Removing na and removing non-numeric categorical data
+tempData = subset(data, select= -c(AHD,ChestPain,Thal))
+tempData <- na.omit(tempData)
+
+#covariance then correlation plot
+corMatrix <- cor(tempData)
+corrplot.mixed(corMatrix, number.cex= 9/ncol(data),tl.cex= 9/ncol(data),lower.col = "black")
+
+```
+
+## Other EDA
+
+
 
 # Logistic Model
 
 ## Logistic Model
 
-Perhaps construct logistic model.
+Constructing a logistic model for AHD based on other features. Tested on a random roughly 40 percent of the data.
 
+```{r logisticModel, echo=TRUE}
+
+# Entire glm fit for numeric data
+glm.fit <- glm(AHDBinary  ~ Age+Sex+RestBP+Chol+Fbs+RestECG+MaxHR+ExAng+Oldpeak+Slope+Ca, data = data, family = binomial)
+summary(glm.fit)
+
+# Considering non-numeric categorical data
+glm.fit.cat <- glm(AHDBinary  ~ChestPain+Thal, data = data, family = binomial)
+summary(glm.fit.cat)
+
+# Combining categorical with numeric; Removing Age
+glm.fit2 <- glm(AHDBinary  ~ Sex+RestBP+Chol+Fbs+RestECG+MaxHR+ExAng+Oldpeak+Slope+Ca+ChestPain+Thal, data = data, family = binomial)
+# Removing RestECG
+glm.fit3 <- glm(AHDBinary  ~ Sex+RestBP+Chol+Fbs+MaxHR+ExAng+Oldpeak+Slope+Ca+ChestPain+Thal, data = data, family = binomial)
+
+# We may consider removing more, but let's keep these for now and observe
+glm.fit5 <- glm(AHDBinary  ~Sex+RestBP+MaxHR+ExAng+Oldpeak+Slope+Ca+ChestPain+Thal, data = data, family = binomial)
+summary(glm.fit5)
+```
 ## Confusion Table
 
-Generate confusion table.
+Constructing a test subset.
+```{r splittingData, echo=TRUE}
+set.seed(1)
+
+testing.indices = sort(sample(nrow(data), nrow(data)*.4, replace = TRUE))
+test <- data[testing.indices,]
+
+```
+
+Constructing probability distribution for predictions on each test observation.
+```{r probDistribution, echo=TRUE}
+
+glm.probs = predict(glm.fit5, test, type = "response")
+#The first 10 predicted probabilities
+glm.probs[1:10]
+
+#Visualizing our probability distribution
+colors <- c(rep("red",10), rep("green",10))
+probHist = ggplot(mapping = aes(glm.probs)) + geom_histogram(binwidth=0.05,boundary = 0,color="black", fill=colors)
+probHist = probHist + ggtitle("Histogram of Probabilities") + theme(plot.title = element_text(hjust = 0.5, size = 17))
+probHist
+```
+
+Generate confusion table based off of 0.5 prediction cutoff.
+
+```{r confusionTable, echo=TRUE}
+#Choosing 0.5 as the cutoff for prediction
+glm.pred <- ifelse(glm.probs > 0.5,1,0)
+#Constructing the table
+glm.table = table(glm.pred,test$AHDBinary)
+glm.table
+```
+
  
 ## Mode-Test Statistics
 
-Calculate classification accuracy and error, sensitivity, specificity, PPV and NPV. Will need to be compared elsewhere
+Calculate classification accuracy and error, sensitivity, specificity, PPV and NPV.
+
+```{r statistics}
+
+#Accuracy
+table.trace = sum(diag(glm.table))
+table.sum = sum(glm.table)
+acc = table.trace / table.sum
+acc
+
+#0.8754209
+
+#error
+err = 1 - acc
+err
+
+#sensitivity
+sens = glm.table[1]/(glm.table[1] + glm.table[2])
+sens
+
+#Specificity
+spec = glm.table[4]/(glm.table[4] + glm.table[3])
+spec
+
+#PPV - Positive Predictive Value
+PPV = glm.table[1]/(glm.table[1] + glm.table[3])
+PPV
+
+#NPV - Negative Predictive Value
+PPV = glm.table[4]/(glm.table[4] + glm.table[2])
+PPV
+
+```
+
+
 
 ## ROC and AUC
 
 Generate ROC and compute AUC for each model
 
+
+```{r logisticRegression13}
+
+test_prob = predict(glm.fit5, newdata = test, type = "response")
+
+test_roc = roc(test$AHDBinary, test_prob)
+
+plot.roc(test_roc, col=par("fg"),print.auc=FALSE,legacy.axes=TRUE,asp =NA)
+
+plot.roc(smooth(test_roc),col="blue",add=TRUE,print.auc=TRUE,legacy.axes = TRUE, asp =NA)
+legend("bottomright",legend=c("Empirical","Smoothed"),col=c(par("fg"),"blue"), lwd=2)
+
+abline(v = -coef(glm.fit5)[1] / coef(glm.fit5)[2], lwd = 3)
+```
+
 ## S sigmoid curve
 
 Generate s-curve for Y against one attribute (you can pick any one attribute), and interpret your findings
+
+I used RestBP TEMPORARILY. THis will be replaced with something more appropriate when we try our CART model.
+```{r sCurve,echo=TRUE}
+
+single.glm <- glm(AHDBinary ~ RestBP, data = data, family = "binomial")
+
+plot(AHDBinary ~ RestBP, data = data,col = "darkorange", pch = "|", xlim = c(0, 2500), ylim = c(0, 1),main = "Using Logistic Regression for Classification")
+abline(h = 0, lty = 3)
+abline(h = 1, lty = 3)
+abline(h = 0.5, lty = 2)
+
+curve(predict(single.glm, data.frame(RestBP = x), type = "response"),add = TRUE, lwd = 3, col = "dodgerblue")
+abline(v = -coef(single.glm)[1] / coef(single.glm)[2], lwd = 3)
+
+
+```
 
 
 # CART Model
@@ -80,4 +238,6 @@ Generate s-curve for Y against one attribute (you can pick any one attribute), a
 # Comparing Models
 
 # Citations
+
+
 
