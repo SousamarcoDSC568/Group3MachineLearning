@@ -27,8 +27,6 @@ library(ISLR)
 library(corrplot)
 # library to PLOT ROC
 library(pROC)
-
-
 ```
 
 Observing the data:
@@ -74,7 +72,7 @@ AHDbar
 
 No correlation among AHD Binary exceeds 0.5, naturally.
 
-```{r Corrmatrix, echo=FALSE,out.width='70%'}
+```{r Corrmatrix, echo=FALSE,out.width='70%',align='center'}
 
 #Removing na and removing non-numeric categorical data
 tempData = subset(data, select= -c(AHD,ChestPain,Thal))
@@ -85,9 +83,6 @@ corMatrix <- cor(tempData)
 corrplot.mixed(corMatrix, number.cex= 9/ncol(data),tl.cex= 9/ncol(data),lower.col = "black")
 
 ```
-
-## Other EDA
-
 
 
 # Logistic Model
@@ -235,7 +230,97 @@ abline(v = -coef(single.glm)[1] / coef(single.glm)[2], lwd = 3)
 
 ## Other subsections
 
+# Other Models (Bagging, Random Forests, Boosting)
+
+```{r dataSplitOM, echo=TRUE}
+Heart <-read.csv('Heart.csv')
+Heart <- na.omit(Heart) #Remove NA for demo
+data <- Heart[,-1]
+set.seed(490)
+split <- sample(1:nrow(data), size=nrow(data) * 0.7)
+train <- data[split,]
+test <- data[-split,]
+```
+
+```{r libraryNew}
+library(randomForest)
+```
+
+## Bagged Trees
+
+```{r Bagged Trees}
+
+train$AHD = factor(train$AHD)
+
+bag.class <- randomForest(AHD~., data = train, mtry=ncol(train) - 1, importance=TRUE,xtest=test[,-14],ytest=factor(test$AHD))
+
+err <- bag.class$err.rate[,1]
+bag.err <- cbind(err, bag.class$test$err.rate[,1])
+colnames(bag.err) <- c("OOB", "Test")
+matplot(1:bag.class$ntree, bag.err, type = "l", xlab="trees", ylab="Error", col = c("red", "blue"))
+legend("right", c('OOB', 'Test') ,col=seq_len(2),cex=0.8,fill=c("red", "blue"))
+
+```
+
+## Random Forests
+```{r randomForest1}
+
+# setting mtry to sqrt(p) is a rule of thumb, this number can be set by
+# k fold CV as well
+rf.class <- randomForest(AHD~., data=train, mtry=round(sqrt(ncol(train) - 1)), importance=TRUE)
+#importance(rf.class)
+varImpPlot(rf.class)
+```
+
+
+```{r randomForests2}
+plot(rf.class, col=c("red", "black", "blue"))
+legend("top", colnames(rf.class$err.rate) ,col=seq_len(3),cex=0.8,fill=c("red", "black", "blue"))
+```
+
+
+```{r randomForest3}
+#Try choosing mtry by plotting the OOB error
+p <- ncol(train) - 1
+oob.error.class <- double(p) #initialize empty vector
+set.seed(1)
+for(m in 1:p) {
+fit <- randomForest(AHD ~ ., data=train, mtry=m, ntree=175)
+conf.mat <- fit$err.rate[175]
+oob.error.class[m] <- fit$err.rate[175, 'OOB']
+}
+matplot(1:p, oob.error.class, pch=19, col="red", type="b", ylab="Misclassification Error", xlab="mtry")
+```
+
+
+```{r randomForests4}
+
+# setting mtry to sqrt(p) is a rule of thumb, this number can be set by
+# k fold CV as well
+rf.class <- randomForest(AHD~., data=train, mtry=3, importance=TRUE)
+plot(rf.class, col=c("red", "black", "blue"))
+legend("top", colnames(rf.class$err.rate) ,col=seq_len(3),cex=0.8,fill=c("red", "black", "blue"))
+
+```
+
+## Boosting
+
+```{r libraryBoosting}
+library(gbm)
+```
+
+```{r Boosting}
+set.seed(1)
+#format y for gbm, must be 0/1
+train$ChestPain = as.numeric(factor(train$ChestPain))
+train$Thal = as.numeric(factor(train$Thal))
+AHD.0.1 <- ifelse(train$AHD == 'Yes', 1, 0)
+class.boost = gbm(AHD.0.1 ~ . - AHD, data = train, n.trees = 5000, distribution = "adaboost", shrinkage = 0.01)
+summary(class.boost)
+```
+
 # Comparing Models
+
 
 # Citations
 
