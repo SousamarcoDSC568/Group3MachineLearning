@@ -13,7 +13,6 @@ Group Leader: \underline{Brianna Johnson}
 
 Member Names: \underline{Marco Sousa, Ben Pfeffer, Nikita Seleznev, Brianna Johnson}
 
-
 # Introduction to the Heart Dataset
 
 ```{r libraries, include=FALSE}
@@ -52,31 +51,35 @@ data <- na.omit(data)
 head(data)
 ```
 
-Describing the data, and (1) identify Y and X.
 
-The Heart dataset considers AHD, their binary relationship of having heart disease or not, and their other associated properties. The dataset contains 303 observations and 14 attributes.
+The 'Heart' dataset considers AHD, the binary relationship of having heart disease or not, and other perhaps associated features. The dataset contains 303 observations and 14 attributes. Some attributes like MaxHR and RestBP are numerical, yet others like Thal or ChestPain are categorical. The direct link to the data from statlearning can be found [here](https://www.statlearning.com/s/Heart.csv).
 
-More to be added/edited
+In particular, we are interested in constructing a model that correctly predicts whether AHD will be "Yes", or "No", as a manner of classification, based on other presented features of the data. We investigate three techniques of carrying out such a classification task: logistic regression, CART, and random forests.
 
+The data is displayed as follows.
+```{r showData}
+head(data)
+```
 
 # Exploratory Data Analysis
 
 ## Count of Binary Outcome
 
-The following is a simple barplot of the count for the binary AHD outcome. We can see there are some more "No", than "Yes".
+The following is a simple barplot of the count for the binary AHD outcome. We can see there are some more "No", than "Yes". More precisely, there are 160 "No", and 137 "Yes". 
 
-```{r binaryCount, echo=FALSE,fig.width=5, fig.height=4,fig.align='center'}
-
+```{r binaryCount, echo=FALSE,fig.width=5, fig.height=3.2,fig.width=3.2,fig.align='center'}
 AHDbar <- ggplot(data, aes(AHD)) + geom_bar(fill="lightblue",color="black")+ ggtitle("Count of AHD") + theme(plot.title = element_text(hjust = 0.5, size = 17)) + geom_text(stat='count', aes(label=..count..), vjust=10)
 
 AHDbar
 ```
 
+\newpage
+
 ## Correlation matrix
 
 No correlation among AHD Binary exceeds 0.5, naturally.
 
-```{r Corrmatrix, echo=FALSE,out.width='70%',align='center'}
+```{r Corrmatrix, echo=FALSE,out.width='80%',align='center'}
 
 #Removing na and removing non-numeric categorical data
 tempData = subset(data, select= -c(AHD,ChestPain,Thal))
@@ -91,9 +94,11 @@ corrplot.mixed(corMatrix, number.cex= 9/ncol(data),tl.cex= 9/ncol(data),lower.co
 
 # Logistic Model
 
+A logistic model is a standard machine learning model used to predict the probability of a binary event, like win lose, yes no, and so on. This does so, briefly speaking, by using the logit transofrmation of the odds to activate our logistic regression formula, resembling p(event)=$\frac{e^{X\beta}}{1+e^{X\beta}}$. In this application, we are interested in calculating a probability for "Yes" versus "No" (or 1 vs 0) for AHD using the other data features.
+
 ## Logistic Model
 
-Constructing a logistic model for AHD based on other features. training and testing sets were separated randomly in a 70/30 split. To construct a final logistic model, features with the highest p values were removed until the remaining attributes were all significant. Some summaries were skipped over for brevity.
+Constructing a logistic model for AHD based on other features. Training and testing sets were separated randomly in a 70/30 split. To construct a final logistic model, features with the highest p values were removed until the remaining attributes were all significant. Some summaries were skipped over for brevity.
 
 Splitting the data and setting seed.
 ```{r dataSplit, echo=TRUE}
@@ -101,10 +106,8 @@ Splitting the data and setting seed.
 set.seed(1)
 
 indices <-sample(1:nrow(data), 0.7 * nrow(data), replace = TRUE)
-
 training <-data[indices,]
 test  <-data[-indices,]
-
 ```
 
 Carrying out the feature selection and yielding a final regression model.
@@ -141,21 +144,25 @@ glm.fit5 <- glm(AHDBinary  ~ Sex+Chol+ExAng+Slope+Ca+ChestPain+Thal, data = trai
 summary(glm.fit5)
 ```
 
-
+Note that the removals were not biased by intuition as to the viability of the feature. That is, they were simply removed depending on their controbution to the model, bot on their intuitive viability to the domain.
 
 ## Confusion Table
 
-Constructing probability distribution for predictions on each test observation.
+Constructing probability distribution for predictions on each test observation. The following is simply an example of the first ten prediction probabilities. We can observe, for these, that many are very high (~99\%).
 ```{r probDistribution, echo=TRUE}
 
 glm.probs = predict(glm.fit5, test, type = "response")
 #The first 10 predicted probabilities
 glm.probs[1:10]
+```
 
+The following is a distribution of these probabilities. Green represents the probabilities that are greater than 50\%, and thus will be classified for "Yes". A promising component of our model is that the distribution is skewed towards 1 and 0, rather than being more uniform. This implies there is a decent distinction between yes or no in producing our prediction, in addition to accuracy analysis.
+
+```{r probDistributionHistogram}
 #Visualizing our probability distribution
 colors <- c(rep("red",10), rep("green",10))
 probHist = ggplot(mapping = aes(glm.probs)) + geom_histogram(binwidth=0.05,boundary = 0,color="black", fill=colors)
-probHist = probHist + ggtitle("Histogram of Probabilities") + theme(plot.title = element_text(hjust = 0.5, size = 17))
+probHist = probHist + ggtitle("Histogram of Probabilities") + theme(plot.title = element_text(hjust = 0.5, size = 17))+xlab("Probability value") + ylab("Count")+theme(aspect.ratio=1)
 probHist
 ```
 
@@ -172,7 +179,7 @@ glm.table
  
 ## Mode-Test Statistics
 
-Calculate classification accuracy and error, sensitivity, specificity, PPV and NPV.
+Calculate classification accuracy and error, sensitivity, specificity, PPV and NPV. We indeed saw more "no" than "Yes" (represented as 0 and 1 respectively). We also seemed to have about equal PPV and NPV.
 
 ```{r statistics}
 
@@ -207,11 +214,9 @@ PPV
 ```
 
 
-
 ## ROC and AUC
 
-Generate ROC and compute AUC for each model
-
+Generate ROC and compute AUC. The AUC is displayed on the figure below, that being 0.903, generated by integrating and similarly calculating the area under the curve. The ROC and AUC gives us more insight as to the performance of our model. An AUC of 0.903 is fairly acceptable performance, and indicates that there is a class separation between yes and no.
 
 ```{r logisticRegression13}
 
@@ -227,72 +232,35 @@ legend("bottomright",legend=c("Empirical","Smoothed"),col=c(par("fg"),"blue"), l
 abline(v = -coef(glm.fit5)[1] / coef(glm.fit5)[2], lwd = 3)
 ```
 
+
 ## S sigmoid curve
 
-Generate s-curve for Y against one attribute (you can pick any one attribute), and interpret your findings
+The following is a s-curve for Chol regarding our logistic model. The orange lines represent the points for Chol with AHDBinary (Chol,AHDBinary). The blue "s-curve" represent the predicted probabilities given the fitted logistic regression. The black line represents the 0.5 cutoff, and decision boundary.
 
-I used RestBP TEMPORARILY. THis will be replaced with something more appropriate when we try our CART model.
+In our case, Chol did not seem to fit our s-curve very well. Firstly, our so called s curve doesn't immediately seem to resemble a s-curve. As such, our points are not well fitted to the curve. Furthermore, 0 and 1 points lie on both sides of the dicision boundary. Chol was one of the paramaters that we included which happened to be significant within our model and random train/test split. Looking at the orange locations more closely, we can see some high cholesterol values, yet belong in the "no" category, which are interesting points that pull down on that end of the s curve. 
+
+This runs counter to what we may expect. It could be expected that the "yes" category would be full of higher cholesterol, yet the "No" category to have lower cholesteral values in contrast.
+
 ```{r sCurve,echo=TRUE}
 
-single.glm <- glm(AHDBinary ~ RestBP, data = data, family = "binomial")
+single.glm <- glm(AHDBinary ~ Chol, data = data, family = "binomial")
 
-plot(AHDBinary ~ RestBP, data = data,col = "darkorange", pch = "|", xlim = c(0, 2500), ylim = c(0, 1),main = "Using Logistic Regression for Classification")
+
+plot(AHDBinary ~ Chol, data = data,col = "darkorange", pch = "|", xlim = c(0, 600), ylim = c(0, 1),main = "Using Logistic Regression for Classification")
 abline(h = 0, lty = 3)
 abline(h = 1, lty = 3)
 abline(h = 0.5, lty = 2)
 
-curve(predict(single.glm, data.frame(RestBP = x), type = "response"),add = TRUE, lwd = 3, col = "dodgerblue")
+curve(predict(single.glm, data.frame(Chol = x), type = "response"),add = TRUE, lwd = 3, col = "dodgerblue")
 abline(v = -coef(single.glm)[1] / coef(single.glm)[2], lwd = 3)
 
-
 ```
-
 
 # CART Model
 
-## CART MODEL
+A Classification and Regression Tree (CART) can be used as a predictive model that explains how a combination of variables can work together, and output a singular result. Specifically, in our Heart Disease Dataset, we are able to determine how variables interact with one another, to determine the binary outcome of having Heart Disease or not. In order to do this, we first obtain our Decision Tree, a series of if/else statements that will lead to a “yes” or “no” prediction. This CART Model serves as a more probabilistic scenario that occurs when dealing with a patient’s medical history. By analyzing factors such as Heart Rate, Blood Pressure, and age, doctor’s can better assess the health of a patient, and make a determination into the likelihood of them having Heart Disease. 
 
-```{r dataSplittingforCART,include=FALSE}
-set.seed(1)
-
-data.split <- sample(1:nrow(data), size=nrow(data) * 0.7)
-data.train <- data[data.split,]
-data.test <- data[-data.split,]
-```
-
-```{r CARTModel,include=FALSE}
-data.cart <- rpart(formula = AHDBinary ~ Age+Sex+RestBP+Chol+Fbs+RestECG+MaxHR+ExAng+Oldpeak+Slope+Ca+ChestPain+Thal, data = data.train, method = "anova", control = rpart.control(minbucket = 6))
-prp(data.cart, roundint = FALSE)
-
-```
-
-
-```{r CARTContinued,include=FALSE}
-cp.param <- data.cart$cptable
-train.mse <- double(8)
-cv.mse <- double(8)
-test.mse <- double(8)
-
-cp.param
-```
-
-
-```{r CART3,include=FALSE}
-
-for (i in 1:8){
-  alpha <- cp.param[i, 'CP']
-  train.mse[i] <- mean((data.train$AHDBinary - predict(prune(data.cart, cp=alpha), newdata = data.train))^2)
-  cv.mse[i] <- cp.param[i, 'xerror'] * cp.param[i, 'rel error']
-  test.mse[i] <- mean((data.test$AHDBinary - predict(prune(data.cart, cp=alpha), newdata = data.test))^2)
-}
-```
-
-
-```{r CART4, include=FALSE}
-train.mse
-cv.mse
-test.mse
-```
+Due to the nature of our dataset, we will specifically model Classification Trees, as we are dealing with a binary outcome of “Yes, the patient has AHD”, or “No, the patient does not have AHD”. Although initially similar to Regression Trees, we will begin with a recursive binary splitting to grow our tree, but do not need to rely on repeating to minimize the SSR/SSE/RSS. Rather, we are more focused on our Classification Error Rate and minimizing our Gini index. Although the CART model may not have the same level of predictive accuracy as some of the other tested approaches in this report, it is the most similar to mirror human decision-making. Thus, it is a strong predictive model for our specific dataset on Heart Disease. 
 
 
 ## CART MODEL
@@ -307,7 +275,7 @@ heart.test <- Heart[-heart.split,]
 
 ```
 
-Constructing our splits
+Constructing our splits.
 
 ```{r BCART2}
 class.cart <- rpart(formula = AHD ~ Age+Sex+RestBP+Chol+Fbs+RestECG+MaxHR+ExAng+Oldpeak+Slope+Ca+ChestPain+Thal, data = heart.train, method = "class", control = rpart.control(minbucket = 2, xval = 10))
@@ -315,6 +283,7 @@ prp(class.cart, roundint = FALSE)
 
 ```
 
+Based on the results of the above Decision Tree, Thalassemia and Chest Pain was determined as the leading predictor of Heart Disease, which was also seen, through the above logistic model. Other interesting patterns to note, would be the classification of age between 51-62, for individuals with Normal Thalassemia and no Chest Pain. 62 became a cutoff point for patients as an indication that their Chest Pain and Thalassemia would not be a factor of Heart Disease, while Chest Pain, without Thalassemia was mostly present in those over the age of 66. 
 
 ```{r BCART3}
 cp.class.param <- class.cart$cptable
@@ -340,7 +309,10 @@ legend("right", c('Train', 'CV', 'Test') ,col=seq_len(3),cex=0.8,fill=c("red", "
 
 ```
 
-Pruning
+Looking at the plot of Train, Test, and CV Values, a tree of size 5 seems to be most accurate.
+
+Pruning.
+
 ```{r BCART5Prune}
 prune.class.trees <- prune(class.cart, cp=cp.class.param[5,'CP'])
 prp(prune.class.trees)
@@ -384,7 +356,6 @@ plot.roc(test_roc, col=par("fg"),plot=TRUE,print.auc = FALSE, legacy.axes = TRUE
 #abline(0, 1, lty=2)
 
 ```
-
 
 
 
@@ -484,12 +455,14 @@ plot.roc(test_roc, col=par("fg"),plot=TRUE,print.auc = FALSE, legacy.axes = TRUE
 
 # Comparing Models
 
-|            |Accuracy| sens | spec | PPV | NPV |
+|           |Accuracy| sens | spec | PPV | NPV |
 |-----------|-------|-------|-------|-------|------|
 | Logistic  | 0.832 | 0.822 | 0.842 | 0.855 | 0.808 |
 | CART      | 0.725 | 0.789 | 0.679 | 0.638 | 0.818 |
 |Rand Forest| 0.844 | 0.826 | 0.868 | 0.895 | 0.785 |
 
+
+The three diferent models produces different cccuracy. The Logistic model had a classification accuracy on its test set of approximately 83 percent. This was higher than the alternative CART model. However, as can be seen in the above figures, the CART model can be visualized with a tree as a tradeoff for this drop in accuracy. As a remedy for the drop in accuracy, a random forest model was produced, allowing for the same visualisation, yet also having the greatest test accuracy among the three models. the sensitivity and specificity yielded ROC that seemed to discern between our two classes, those being yes and no for AHD.
 
 
 # Citations
