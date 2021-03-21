@@ -27,6 +27,10 @@ library(ISLR)
 library(corrplot)
 # library to PLOT ROC
 library(pROC)
+#CART Stuff
+library(rpart)
+library(rpart.plot)
+
 ```
 
 Observing the data:
@@ -248,101 +252,262 @@ abline(v = -coef(single.glm)[1] / coef(single.glm)[2], lwd = 3)
 
 ## CART MODEL
 
-## Other subsections
+```{r dataSplittingforCART,include=FALSE}
+set.seed(1)
 
-# Other Models (Bagging, Random Forests, Boosting)
+data.split <- sample(1:nrow(data), size=nrow(data) * 0.7)
+data.train <- data[data.split,]
+data.test <- data[-data.split,]
+```
 
-```{r dataSplitOM, echo=TRUE}
+```{r CARTModel,include=FALSE}
+data.cart <- rpart(formula = AHDBinary ~ Age+Sex+RestBP+Chol+Fbs+RestECG+MaxHR+ExAng+Oldpeak+Slope+Ca+ChestPain+Thal, data = data.train, method = "anova", control = rpart.control(minbucket = 6))
+prp(data.cart, roundint = FALSE)
+
+```
+
+
+```{r CARTContinued,include=FALSE}
+cp.param <- data.cart$cptable
+train.mse <- double(8)
+cv.mse <- double(8)
+test.mse <- double(8)
+
+cp.param
+```
+
+
+```{r CART3,include=FALSE}
+
+for (i in 1:8){
+  alpha <- cp.param[i, 'CP']
+  train.mse[i] <- mean((data.train$AHDBinary - predict(prune(data.cart, cp=alpha), newdata = data.train))^2)
+  cv.mse[i] <- cp.param[i, 'xerror'] * cp.param[i, 'rel error']
+  test.mse[i] <- mean((data.test$AHDBinary - predict(prune(data.cart, cp=alpha), newdata = data.test))^2)
+}
+```
+
+
+```{r CART4, include=FALSE}
+train.mse
+cv.mse
+test.mse
+```
+
+
+## CART MODEL
+
+```{r BCARTSplittingData}
+
+Heart <-read.csv('https://www.statlearning.com/s/Heart.csv')
+set.seed(1)
+heart.split <- sample(1:nrow(Heart), size=nrow(Heart) * 0.7)
+heart.train <- Heart[heart.split,]
+heart.test <- Heart[-heart.split,]
+
+```
+
+Constructing our splits
+
+```{r BCART2}
+class.cart <- rpart(formula = AHD ~ Age+Sex+RestBP+Chol+Fbs+RestECG+MaxHR+ExAng+Oldpeak+Slope+Ca+ChestPain+Thal, data = heart.train, method = "class", control = rpart.control(minbucket = 2, xval = 10))
+prp(class.cart, roundint = FALSE)
+
+```
+
+
+```{r BCART3}
+cp.class.param <- class.cart$cptable
+train.acc <- double(6)
+cv.acc <- double(6)
+test.acc <- double(6)
+for (i in 1:nrow(cp.class.param)) {
+  alpha <- cp.class.param[i, 'CP']
+  train.cm <- table(heart.train$AHD, predict(prune(class.cart, cp=alpha), newdata = heart.train, type='class'))
+  train.acc[i] <- 1-sum(diag(train.cm))/sum(train.cm)
+  cv.acc[i] <- cp.class.param[i, 'xerror'] * cp.class.param[i, 'rel error']
+  test.cm <- table(heart.test$AHD, predict(prune(class.cart, cp=alpha), newdata = heart.test, type='class'))
+  test.acc[i] <- 1-sum(diag(test.cm))/sum(test.cm)
+}
+
+```
+
+Train cv and test accuracy.
+
+```{r BCART4}
+matplot(cp.class.param[,'nsplit'], cbind(train.acc, cv.acc, test.acc), pch=19, col=c("red", "black", "blue"), type="b", ylab="Loss", xlab="Depth")
+legend("right", c('Train', 'CV', 'Test') ,col=seq_len(3),cex=0.8,fill=c("red", "black", "blue"))
+
+```
+
+Pruning
+```{r BCART5Prune}
+prune.class.trees <- prune(class.cart, cp=cp.class.param[5,'CP'])
+prp(prune.class.trees)
+
+```
+
+## Confusion Matrix
+Confusion Matrix
+```{r}
+conf.mat.tree <- table(heart.test$AHD, predict(prune.class.trees, type = 'class', newdata = heart.test))
+conf.mat.tree
+```
+
+
+## Mode-Test Statistics
+
+Statistics regarding our confusion table.
+
+```{r}
+acc <- sum(diag(conf.mat.tree))/sum(conf.mat.tree)
+err <- 1 - acc
+sens <- conf.mat.tree[1,1]/(conf.mat.tree[1,1] + conf.mat.tree[2,1])
+spec <- conf.mat.tree[2,2]/(conf.mat.tree[2,2] + conf.mat.tree[1,2])
+ppv <- conf.mat.tree[1,1]/(conf.mat.tree[1,1] + conf.mat.tree[1,2])
+npv <- conf.mat.tree[2,2]/(conf.mat.tree[2,2] + conf.mat.tree[2,1])
+c(Accuracy = acc, Error = err, Sensitivity=sens, Specificity = spec, PPV = ppv, NPV = npv)
+```
+
+## ROC
+```{r ROC}
+
+library(rpart)
+library(ROCR)
+
+test_prob = predict(prune.class.trees, newdata = heart.test, type='class')
+test_roc = roc(heart.test$AHD, factor(test_prob, ordered = TRUE))
+plot.roc(test_roc, col=par("fg"),plot=TRUE,print.auc = FALSE, legacy.axes = TRUE, asp =NA)
+
+#pred <- prediction(predict(class.cart, type="prob")[, 2], Heart$AHD)
+#plot(performance(pred, "tpr", "fpr"), col="blue", main="ROC AHD")
+#abline(0, 1, lty=2)
+
+```
+
+
+
+
+# Random Forests
+
+The decision trees approach suffers from high variance, meaning  the results of the tree fitting to the raining set can be quite different depending on the training/test set split. To combat this issue with the decision trees bootstrap aggregation is employed, which is also referred to as "bagging". In this approach many training sets are derived from the population using bootstrap, a separate prediction model using each training set is developed, and the resulting predictions are averaged. For the classification task that we consider in this project instead of averaging the majority vote is taken across the predicted classes. This allows to reduce the variance of the statistical method. 
+
+On average, each bagged tree makes use of around two-thirds of the observations. The remaining one-third of the observations not used to fit a given bagged tree are referred to as the out-of-bag (OOB) observations. Testing the predictions on the OOB observations is the foundation for the OOB error estimate. Based on the results shown below approximately 230 trees are sufficient for both errors to stabilize. 
+
+Random forests provide an improvement over bagged trees by way of a random tweak that decorrelates the trees. The split is allowed to use only one a subset of predictors. A fresh sample of predictors is taken at each split, and the number of predictors in the subset typically equals the square root of the total number of predictors. The random forest results and a variable importance plot for the Heart data are given below. 
+
+
+```{r a}
 Heart <-read.csv('Heart.csv')
 Heart <- na.omit(Heart) #Remove NA for demo
-data <- Heart[,-1]
+data1 <- Heart[,-1]
 set.seed(490)
-split <- sample(1:nrow(data), size=nrow(data) * 0.7)
-train <- data[split,]
-test <- data[-split,]
-```
-
-```{r libraryNew}
-library(randomForest)
-```
-
-## Bagged Trees
-
-```{r Bagged Trees}
-
+split <- sample(1:nrow(data1), size=nrow(data1) * 0.7)
+train <- data1[split,]
+test <-  data1[-split,]
 train$AHD = factor(train$AHD)
 
-bag.class <- randomForest(AHD~., data = train, mtry=ncol(train) - 1, importance=TRUE,xtest=test[,-14],ytest=factor(test$AHD))
-
-err <- bag.class$err.rate[,1]
-bag.err <- cbind(err, bag.class$test$err.rate[,1])
-colnames(bag.err) <- c("OOB", "Test")
-matplot(1:bag.class$ntree, bag.err, type = "l", xlab="trees", ylab="Error", col = c("red", "blue"))
-legend("right", c('OOB', 'Test') ,col=seq_len(2),cex=0.8,fill=c("red", "blue"))
-
-```
-
-## Random Forests
-```{r randomForest1}
-
-# setting mtry to sqrt(p) is a rule of thumb, this number can be set by
-# k fold CV as well
-rf.class <- randomForest(AHD~., data=train, mtry=round(sqrt(ncol(train) - 1)), importance=TRUE)
-#importance(rf.class)
-varImpPlot(rf.class)
 ```
 
 
-```{r randomForests2}
-plot(rf.class, col=c("red", "black", "blue"))
-legend("top", colnames(rf.class$err.rate) ,col=seq_len(3),cex=0.8,fill=c("red", "black", "blue"))
-```
-
-
-```{r randomForest3}
-#Try choosing mtry by plotting the OOB error
-p <- ncol(train) - 1
-oob.error.class <- double(p) #initialize empty vector
+```{r b}
+library(randomForest)
 set.seed(1)
-for(m in 1:p) {
-fit <- randomForest(AHD ~ ., data=train, mtry=m, ntree=175)
-conf.mat <- fit$err.rate[175]
-oob.error.class[m] <- fit$err.rate[175, 'OOB']
-}
-matplot(1:p, oob.error.class, pch=19, col="red", type="b", ylab="Misclassification Error", xlab="mtry")
-```
-
-
-```{r randomForests4}
-
-# setting mtry to sqrt(p) is a rule of thumb, this number can be set by
-# k fold CV as well
-rf.class <- randomForest(AHD~., data=train, mtry=3, importance=TRUE)
+rf.class <- randomForest(AHD~., data=train, mtry=round(sqrt(ncol(train)-1)), importance=TRUE, xtest=test[,-14], ytest=factor(test$AHD))
 plot(rf.class, col=c("red", "black", "blue"))
-legend("top", colnames(rf.class$err.rate) ,col=seq_len(3),cex=0.8,fill=c("red", "black", "blue"))
-
+legend("top", colnames(rf.class$err.rate) ,col=seq_len(3),cex=0.8,
+       fill=c("red", "black", "blue"))
 ```
 
-## Boosting
 
-```{r libraryBoosting}
-library(gbm)
+## Confusion Table
+
+Carry out prediction with the Random Forest model:
+```{r c}
+
+rf_classifier <- randomForest(AHD ~ ., data=train, ntree = 500, mtry=round(sqrt(ncol(train)-1)), importance=TRUE)
+prediction_for_table <- predict(rf_classifier, test[,-14])
+c.table <- table(observed=test[,14],predicted=prediction_for_table)
+c.table
 ```
 
-```{r Boosting}
-set.seed(1)
-#format y for gbm, must be 0/1
-train$ChestPain = as.numeric(factor(train$ChestPain))
-train$Thal = as.numeric(factor(train$Thal))
-AHD.0.1 <- ifelse(train$AHD == 'Yes', 1, 0)
-class.boost = gbm(AHD.0.1 ~ . - AHD, data = train, n.trees = 5000, distribution = "adaboost", shrinkage = 0.01)
-summary(class.boost)
+## Mode-Test Statistics
+
+Calculate classification accuracy and error, sensitivity, specificity, PPV and NPV.
+
+```{r d}
+
+#Accuracy
+table.trace = sum(diag(c.table))
+table.sum = sum(c.table)
+acc = table.trace / table.sum
+acc
+
+#0.8754209
+
+#error
+err = 1 - acc
+err
+
+#sensitivity
+sens = c.table[1]/(c.table[1] + c.table[2])
+sens
+
+#Specificity
+spec = c.table[4]/(c.table[4] + c.table[3])
+spec
+
+#PPV - Positive Predictive Value
+PPV = c.table[1]/(c.table[1] + c.table[3])
+PPV
+
+#NPV - Negative Predictive Value
+PPV = c.table[4]/(c.table[4] + c.table[2])
+PPV
+
+```
+ Thus, the Random Forest classifier achieved the accuracy of ~ 84 % and corresponding error of ~ 16 %.
+
+## ROC and AUC
+
+Generate ROC and compute AUC for Random Forest
+
+
+```{r e}
+
+test_prob = predict(rf_classifier, newdata = test[,-14], type = "class")
+#test_prob = predict(prune.class.trees, newdata = heart.test, type='class')
+test_roc = roc(test$AHD, factor(test_prob, ordered = TRUE))
+plot.roc(test_roc, col=par("fg"),plot=TRUE,print.auc = FALSE, legacy.axes = TRUE, asp =NA)
+
 ```
 
 # Comparing Models
 
+|            |Accuracy| sens | spec | PPV | NPV |
+|-----------|-------|-------|-------|-------|------|
+| Logistic  | 0.832 | 0.822 | 0.842 | 0.855 | 0.808 |
+| CART      | 0.725 | 0.789 | 0.679 | 0.638 | 0.818 |
+|Rand Forest| 0.844 | 0.826 | 0.868 | 0.895 | 0.785 |
+
+
 
 # Citations
+[1] Index of An Introduction to Statistical Learning/Heart.csv, https://www.statlearning.com/s/Heart.csv.
+
+[2] Fang, Julia. “CIS490_LS9_21S_Classification_Logistic&ROC&AUC.” MyCourses, 2021.
+
+[3] Fang, Julia. “CIS490_LS10_21S_CART.” MyCourses, 2021.
+
+[4] Fang, Julia. “R_logistic&ROC_21S.” MyCourses, 2021.
+
+[5] Fang, Julia. “R_Trees_S21.” MyCourses, 2021.
+
+[6] Fang, Julia. “Supplement_Reading_BaggingRandomForestBoosting.” MyCourses, 2021
+
+[7] James, G., Witten, D., Hastie, T. and Tibshirani, R., 2013. An introduction to statistical learning (Vol. 112, p. 18). New York: springer.
+
+
 
 
 
