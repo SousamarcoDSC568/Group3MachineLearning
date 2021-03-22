@@ -32,7 +32,6 @@ library(rpart.plot)
 
 ```
 
-Observing the data:
 ```{r loadingData, echo=FALSE}
 
 #Importing from directory
@@ -47,8 +46,6 @@ data <- data %>%
 
 #ca has a few na, so we may or may not remove them, yet simply state so.
 data <- na.omit(data)
-
-head(data)
 ```
 
 
@@ -72,8 +69,6 @@ AHDbar <- ggplot(data, aes(AHD)) + geom_bar(fill="lightblue",color="black")+ ggt
 
 AHDbar
 ```
-
-\newpage
 
 ## Correlation matrix
 
@@ -196,20 +191,20 @@ err = 1 - acc
 err
 
 #sensitivity
-sens = glm.table[1]/(glm.table[1] + glm.table[2])
+sens = glm.table[4]/(glm.table[4] + glm.table[3])
 sens
 
 #Specificity
-spec = glm.table[4]/(glm.table[4] + glm.table[3])
+spec = glm.table[1]/(glm.table[1] + glm.table[2])
 spec
 
 #PPV - Positive Predictive Value
-PPV = glm.table[1]/(glm.table[1] + glm.table[3])
+PPV = glm.table[4]/(glm.table[2] + glm.table[4])
 PPV
 
 #NPV - Negative Predictive Value
-PPV = glm.table[4]/(glm.table[4] + glm.table[2])
-PPV
+NPV = glm.table[1]/(glm.table[1] + glm.table[3])
+NPV
 
 ```
 
@@ -268,6 +263,7 @@ Due to the nature of our dataset, we will specifically model Classification Tree
 ```{r BCARTSplittingData}
 
 Heart <-read.csv('https://www.statlearning.com/s/Heart.csv')
+Heart <-Heart[,-1]
 set.seed(1)
 heart.split <- sample(1:nrow(Heart), size=nrow(Heart) * 0.7)
 heart.train <- Heart[heart.split,]
@@ -347,25 +343,22 @@ c(Accuracy = acc, Error = err, Sensitivity=sens, Specificity = spec, PPV = ppv, 
 library(rpart)
 library(ROCR)
 
-test_prob = predict(prune.class.trees, newdata = heart.test, type='class')
-test_roc = roc(heart.test$AHD, factor(test_prob, ordered = TRUE))
-plot.roc(test_roc, col=par("fg"),plot=TRUE,print.auc = FALSE, legacy.axes = TRUE, asp =NA)
-
-#pred <- prediction(predict(class.cart, type="prob")[, 2], Heart$AHD)
-#plot(performance(pred, "tpr", "fpr"), col="blue", main="ROC AHD")
-#abline(0, 1, lty=2)
+pred <- prediction(predict(prune.class.trees, heart.test[,-14], type="prob")[, 2], heart.test$AHD)
+plot(performance(pred, "tpr", "fpr"), col="blue", main="ROC AHD")
+abline(0, 1, lty=2)
+auc <- performance(pred, "auc")
+auc@y.values
 
 ```
-
 
 
 # Random Forests
 
 The decision trees approach suffers from high variance, meaning  the results of the tree fitting to the raining set can be quite different depending on the training/test set split. To combat this issue with the decision trees bootstrap aggregation is employed, which is also referred to as "bagging". In this approach many training sets are derived from the population using bootstrap, a separate prediction model using each training set is developed, and the resulting predictions are averaged. For the classification task that we consider in this project instead of averaging the majority vote is taken across the predicted classes. This allows to reduce the variance of the statistical method. 
 
-On average, each bagged tree makes use of around two-thirds of the observations. The remaining one-third of the observations not used to fit a given bagged tree are referred to as the out-of-bag (OOB) observations. Testing the predictions on the OOB observations is the foundation for the OOB error estimate. Based on the results shown below approximately 230 trees are sufficient for both errors to stabilize. 
+On average, each bagged tree makes use of around two-thirds of the observations. The remaining one-third of the observations not used to fit a given bagged tree are referred to as the out-of-bag (OOB) observations. Testing the predictions on the OOB observations is the foundation for the OOB error estimate. 
 
-Random forests provide an improvement over bagged trees by way of a random tweak that decorrelates the trees. The split is allowed to use only one a subset of predictors. A fresh sample of predictors is taken at each split, and the number of predictors in the subset typically equals the square root of the total number of predictors. The random forest results and a variable importance plot for the Heart data are given below. 
+Random forests provide an improvement over bagged trees by way of a random tweak that decorrelates the trees. The split is allowed to use only a subset of predictors. A fresh sample of predictors is taken at each split, and the number of predictors in the subset typically equals the square root of the total number of predictors. The random forest results are shown below. Approximately 230 trees are sufficient for both OOB and test set errors to stabilize. 
 
 
 ```{r a}
@@ -398,7 +391,7 @@ Carry out prediction with the Random Forest model:
 
 rf_classifier <- randomForest(AHD ~ ., data=train, ntree = 500, mtry=round(sqrt(ncol(train)-1)), importance=TRUE)
 prediction_for_table <- predict(rf_classifier, test[,-14])
-c.table <- table(observed=test[,14],predicted=prediction_for_table)
+c.table <- table(predicted=prediction_for_table,observed=test[,14])
 c.table
 ```
 
@@ -421,48 +414,50 @@ err = 1 - acc
 err
 
 #sensitivity
-sens = c.table[1]/(c.table[1] + c.table[2])
+sens = c.table[4]/(c.table[4] + c.table[3])
 sens
 
 #Specificity
-spec = c.table[4]/(c.table[4] + c.table[3])
+spec = c.table[1]/(c.table[1] + c.table[2])
 spec
 
 #PPV - Positive Predictive Value
-PPV = c.table[1]/(c.table[1] + c.table[3])
+PPV = c.table[4]/(c.table[2] + c.table[4])
 PPV
 
 #NPV - Negative Predictive Value
-PPV = c.table[4]/(c.table[4] + c.table[2])
-PPV
+NPV = c.table[1]/(c.table[1] + c.table[3])
+NPV
 
 ```
  Thus, the Random Forest classifier achieved the accuracy of ~ 84 % and corresponding error of ~ 16 %.
 
 ## ROC and AUC
 
-Generate ROC and compute AUC for Random Forest
+Generate ROC and compute AUC for Random Forest:
 
 
 ```{r e}
-
-test_prob = predict(rf_classifier, newdata = test[,-14], type = "class")
-#test_prob = predict(prune.class.trees, newdata = heart.test, type='class')
-test_roc = roc(test$AHD, factor(test_prob, ordered = TRUE))
-plot.roc(test_roc, col=par("fg"),plot=TRUE,print.auc = FALSE, legacy.axes = TRUE, asp =NA)
+library(ROCR)
+pred <- prediction(predict(rf_classifier,test[,-14], type="prob")[, 2], test$AHD)
+plot(performance(pred, "tpr", "fpr"), col="blue", main="ROC AHD")
+abline(0, 1, lty=2)
+auc <- performance(pred, "auc")
+auc@y.values
 
 ```
+For Random Forest the AUC equals to 0.905, which is on par with the result for the logistic regression and indicates a good performance of this classifier on the Heart dataset.  
 
 # Comparing Models
 
-|           |Accuracy| sens | spec | PPV | NPV |
-|-----------|-------|-------|-------|-------|------|
-| Logistic  | 0.832 | 0.822 | 0.842 | 0.855 | 0.808 |
-| CART      | 0.725 | 0.789 | 0.679 | 0.638 | 0.818 |
-|Rand Forest| 0.844 | 0.826 | 0.868 | 0.895 | 0.785 |
+|           |Accuracy| sens  |  spec |  PPV  |  NPV  |
+|-----------|--------|-------|-------|-------|-------|
+| Logistic  | 0.832  | 0.842 | 0.822 | 0.808 | 0.855 |
+| CART      | 0.725  | 0.789 | 0.679 | 0.638 | 0.818 |
+|Rand Forest| 0.844  | 0.785 | 0.895 | 0.868 | 0.826 |
 
 
-The three diferent models produces different cccuracy. The Logistic model had a classification accuracy on its test set of approximately 83 percent. This was higher than the alternative CART model. However, as can be seen in the above figures, the CART model can be visualized with a tree as a tradeoff for this drop in accuracy. As a remedy for the drop in accuracy, a random forest model was produced, allowing for the same visualisation, yet also having the greatest test accuracy among the three models. the sensitivity and specificity yielded ROC that seemed to discern between our two classes, those being yes and no for AHD.
+The three diferent models produces different cccuracy. The Logistic model had a classification accuracy on its test set of approximately 83 percent. This was higher than the alternative CART model. However, as can be seen in the above figures, the CART model can be visualized with a tree as a tradeoff for this drop in accuracy. As a remedy for the drop in accuracy, a random forest model was produced, allowing for the same visualization and splitting technique, yet also having the greatest test accuracy among the three models. the sensitivity and specificity yielded ROC that seemed to discern between our two classes, those being yes and no for AHD.
 
 
 # Citations
