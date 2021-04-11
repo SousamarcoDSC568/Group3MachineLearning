@@ -30,17 +30,84 @@ library(pROC)
 
 ```
 
+Credited to Ronny Kohavi and Barry Becker, The  1994 United States Census Bureau data has several features describing an individual to predict in a binary manner whether that individual will earn more or less than $50,000 per year.
+
+```{r importingData, echo=FALSE}
+#Importing from directory. I specify a csv sep and strip whitespace
+dataTrain <- read.table('https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data',sep=",",strip.white=TRUE)
+
+#Names (Note: The .names file contains metadata on attributes)
+names(dataTrain) <-c("age", "workclass", "fnlwgt", "education", "education.num", "marital.status", "occupation", "relationship","race","sex","capital.gain","capital.loss","hours.per.week","native.country","income")
+
+# find elements of ? (similar to NA)
+idx <- dataTrain == "?"
+# replace elements with NA
+is.na(dataTrain) <- idx
+
+#Choosing to remove NA
+dataTrain <- na.omit(dataTrain)
+
+#Making binary column binary
+dataTrain <- dataTrain %>%
+      mutate(incomeBinary = ifelse(income == "<=50K",0,1))
+
+
+dataTest <- read.table('adult.test',sep=",",strip.white=TRUE)
+
+names(dataTest) <-c("age", "workclass", "fnlwgt", "education", "education.num", "marital.status", "occupation", "relationship","race","sex","capital.gain","capital.loss","hours.per.week","native.country","income")
+
+# find elements
+idx <- dataTest == "?"
+# replace elements with NA
+is.na(dataTest) <- idx
+
+dataTest <- na.omit(dataTest)
+
+dataTest <- dataTest %>%
+  mutate(incomeBinary = ifelse(income == "<=50K.",0,1))
+
+nrow(dataTrain)
+nrow(dataTest)
+```
+
+The training data is displayed as follows.
+```{r seeData, echo=FALSE}
+head(dataTrain)
+```
+
 
 # Exploratory Data Analysis
 
-## EDA 1
+## Binary Income Count
 
-## EDA 2
+```{r incomeHistTrain, echo=FALSE,out.width='70%'}
+incomeTrBar <- ggplot(dataTrain, aes(incomeBinary)) + geom_bar(fill="lightblue",color="black")+ ggtitle("Train Income <=50K vs >50K") + theme(plot.title = element_text(hjust = 0.5, size = 17)) + geom_text(stat='count', aes(label=..count..), vjust=5)
 
-## EDA 3
+incomeTrBar
+```
+
+```{r incomeHistTest, echo=FALSE,out.width='70%'}
+incomeTestBar <- ggplot(dataTest, aes(incomeBinary)) + geom_bar(fill="lightblue",color="black")+ ggtitle("Train Income <=50K vs >50K") + theme(plot.title = element_text(hjust = 0.5, size = 17)) + geom_text(stat='count', aes(label=..count..), vjust=5)
+
+incomeTestBar
+```
+
+## Quick Histograms
+
+```{r histograms, echo=FALSE,out.width='50%'}
+
+trainAge = hist(dataTrain$age)
+trainFnl = hist(dataTrain$fnlwgt)
+trainGain = hist(dataTrain$capital.gain)
+trainLoss = hist(dataTrain$capital.loss)
+```
+
+## EDA Next
 
 
 # Logistic Regression
+
+
 
 
 # Naive Bayes
